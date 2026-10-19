@@ -1,495 +1,321 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const vehicles = [
-  { name: "Lady Bike", use: "Ride", image: "https://cdn-icons-png.flaticon.com/512/2972/2972210.png" },
-  { name: "Man Bike", use: "Ride", image: "https://cdn-icons-png.flaticon.com/512/2972/2972210.png" },
-  { name: "Riksha", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774080.png" },
-  { name: "Mini Car", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774278.png" },
-  { name: "Big Car", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774278.png" },
-  { name: "Hiroof", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774086.png" },
-  { name: "Hiaxe", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774086.png" },
-  { name: "Coster", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774090.png" },
-  { name: "Hino Bus", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774090.png" },
-  { name: "Truck", use: "Goods", image: "https://cdn-icons-png.flaticon.com/512/3774/3774105.png" },
-  { name: "Hino Truck", use: "Goods", image: "https://cdn-icons-png.flaticon.com/512/3774/3774105.png" },
-  { name: "Suzuki Every", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774086.png" },
-  { name: "Nissan", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774086.png" },
-  { name: "Changan", use: "Both", image: "https://cdn-icons-png.flaticon.com/512/3774/3774086.png" },
-  { name: "Suzuki Pickup", use: "Goods", image: "https://cdn-icons-png.flaticon.com/512/3774/3774273.png" },
+  { name: "Man Bike", use: "Ride", min: 200, photo: "photo-1558981806-ec527fa84c39" },
+  { name: "Riksha", use: "Ride", min: 250, photo: "photo-1558618666-fcd25c85cd64" },
+  { name: "Mini Car", use: "Ride", min: 300, photo: "photo-1503376780353-7e6692767b70" },
+  { name: "Big Car", use: "Ride", min: 500, photo: "photo-1492144534655-ae79c964c9d7" },
+  { name: "Hiroof", use: "Both", min: 500, photo: "photo-1511919884226-fd3cad34687c" },
+  { name: "Hiaxe", use: "Both", min: 700, photo: "photo-1549317661-bd32c8ce0db2" },
+  { name: "Coster", use: "Both", min: 1200, photo: "photo-1507136566006-cfc505b114fc" },
+  { name: "Hino Bus", use: "Ride", min: 2500, photo: "photo-1570125909232-eb263c188f7e" },
+  { name: "Truck", use: "Goods", min: 1500, photo: "photo-1601584115197-04ecc0da31d7" },
+  { name: "Hino Truck", use: "Goods", min: 2500, photo: "photo-1519003722824-194d4455a60c" },
+  { name: "Suzuki Every", use: "Both", min: 500, photo: "photo-1503736334956-4c8f8e92946d" },
+  { name: "Nissan", use: "Both", min: 600, photo: "photo-1486262715619-67b85e0b08d3" },
+  { name: "Changan", use: "Both", min: 500, photo: "photo-1552519507-da3b142c6e3d" },
+  { name: "Suzuki Loading", use: "Goods", min: 700, photo: "photo-1566933293069-b55c7f326dd4" },
 ];
-
-const money = (n) =>
-  new Intl.NumberFormat("en-PK", {
-    style: "currency",
-    currency: "PKR",
-    maximumFractionDigits: 0,
-  }).format(n);
 
 export default function Home() {
   const [mode, setMode] = useState("Ride");
-  const [vehicle, setVehicle] = useState("");
+  const [selected, setSelected] = useState("Man Bike");
   const [pickup, setPickup] = useState("");
-  const [drop, setDrop] = useState("");
-  const [phone, setPhone] = useState("");
+  const [destination, setDestination] = useState("");
   const [fare, setFare] = useState("500");
-  const [location, setLocation] = useState(null);
   const [message, setMessage] = useState("");
-  const [role, setRole] = useState("Customer");
-  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const availableVehicles = vehicles.filter((v) =>
-    mode === "Ride"
-      ? v.use === "Ride" || v.use === "Both"
-      : v.use === "Goods" || v.use === "Both"
+  const available = useMemo(
+    () => vehicles.filter((v) =>
+      mode === "Ride"
+        ? v.use === "Ride" || v.use === "Both"
+        : v.use === "Goods" || v.use === "Both"
+    ),
+    [mode]
   );
 
-  const amount = Math.max(0, Number(fare) || 0);
+  const vehicle = vehicles.find((v) => v.name === selected);
+  const amount = Math.max(Number(fare) || 0, vehicle?.min || 0);
   const commission = Math.round(amount * 0.10);
-  const riderAmount = amount - commission;
+  const riderGets = amount - commission;
 
-  function getLocation() {
-    if (!navigator.geolocation) {
-      setMessage("Is browser mein GPS support nahi hai.");
-      return;
+  function changeMode(nextMode) {
+    setMode(nextMode);
+    const list = vehicles.filter((v) =>
+      nextMode === "Ride"
+        ? v.use === "Ride" || v.use === "Both"
+        : v.use === "Goods" || v.use === "Both"
+    );
+    if (list.length) {
+      setSelected(list[0].name);
+      setFare(String(list[0].min));
     }
-
-    setLoadingLocation(true);
     setMessage("");
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        };
-        setLocation(coords);
-        setPickup(`${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`);
-        setLoadingLocation(false);
-        setMessage("GPS location mil gayi. Map par check karein.");
-      },
-      (err) => {
-        setLoadingLocation(false);
-        setMessage(
-          err.code === 1
-            ? "Location permission allow karein, phir dobara koshish karein."
-            : "Location nahi mili. GPS on karke dobara koshish karein."
-        );
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
   }
 
-  function openMap() {
-    const query = location
-      ? `${location.lat},${location.lng}`
-      : pickup.trim() || "Karachi, Pakistan";
-
-    window.open(
-      `https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+  function selectVehicle(v) {
+    setSelected(v.name);
+    setFare(String(v.min));
+    setMessage("");
   }
 
-  function submitBooking(e) {
-    e.preventDefault();
-
-    if (!vehicle || !pickup.trim() || !drop.trim() || !phone.trim()) {
-      setMessage("Vehicle, pickup, destination aur contact number bharna zaroori hai.");
+  function useMyLocation() {
+    setMessage("");
+    if (!navigator.geolocation) {
+      setMessage("Is phone mein location ki sahulat available nahi.");
       return;
     }
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setPickup(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        setBusy(false);
+        setMessage("GPS location mil gayi. Pakistan ke andar hone ki tasdeeq abhi server se nahi hoti.");
+      },
+      () => {
+        setBusy(false);
+        setMessage("Location nahi mili. Phone ki Location permission on karein.");
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }
 
+  function requestBooking() {
+    if (!pickup.trim() || !destination.trim()) {
+      setMessage("Meherbani karke pickup aur destination dono likhein.");
+      return;
+    }
+    if (amount <= 0 || !Number.isFinite(amount)) {
+      setMessage("Sahi fare enter karein.");
+      return;
+    }
     setMessage(
-      `Test successful! ${vehicle} select hai. Kiraya ${money(amount)}, ` +
-      `10% commission ${money(commission)}. Abhi booking server par save nahi hui.`
+      "Yeh abhi demo hai: booking server par save nahi hui aur koi rider assign nahi hua. Agle marhalay mein database aur rider matching jorenge."
     );
   }
 
   return (
-    <main style={s.page}>
-      <header style={s.hero}>
-        <div style={s.logo}>DRB</div>
-        <h1>Daily Ride Bazar</h1>
-        <p>Safar bhi, Saman Transport bhi</p>
-        <p style={s.smallLight}>Asaan booking • Munasib commission</p>
+    <main className="page">
+      <header className="header">
+        <div className="logo">DRB</div>
+        <div>
+          <h1>Daily Ride Bazar</h1>
+          <p>Apna safar, apni sahulat</p>
+        </div>
       </header>
 
-      <nav style={s.nav}>
-        <a href="#booking">Booking</a>
-        <a href="#map">Map & GPS</a>
-        <a href="#fare">Kiraya</a>
-        <a href="#account">Account</a>
-      </nav>
-
-      <section style={s.section}>
-        <h2>Apni Service Chunein</h2>
-        <div style={s.row}>
-          {["Ride", "Goods"].map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => {
-                setMode(m);
-                setVehicle("");
-                setMessage("");
-              }}
-              style={s.modeBtn(mode === m)}
-            >
-              {m === "Ride" ? "🚕 Ride Lo" : "📦 Saman Bhejo"}
-            </button>
-          ))}
-        </div>
+      <section className="welcome">
+        <span className="eyebrow">PAKISTAN</span>
+        <h2>Safar kahan ka hai?</h2>
+        <p>Apni sawari select karein aur booking ki tafseel bharein.</p>
       </section>
 
-      <section style={s.section}>
-        <h2>Vehicle Select Karein</h2>
-        <p style={s.muted}>
-          {availableVehicles.length} options. Apni zaroorat ke mutabiq chunein.
-        </p>
-        <div style={s.grid}>
-          {availableVehicles.map((v) => (
+      <div className="tabs">
+        <button
+          className={mode === "Ride" ? "tab active" : "tab"}
+          onClick={() => changeMode("Ride")}
+        >
+          Passenger Ride
+        </button>
+        <button
+          className={mode === "Goods" ? "tab active" : "tab"}
+          onClick={() => changeMode("Goods")}
+        >
+          Goods Transport
+        </button>
+      </div>
+
+      <section className="section">
+        <div className="section-heading">
+          <h2>{mode === "Ride" ? "Apni sawari chunein" : "Samaan ke liye gari chunein"}</h2>
+          <span>{available.length} options</span>
+        </div>
+
+        <div className="vehicles">
+          {available.map((v) => (
             <button
               type="button"
               key={v.name}
-              onClick={() => setVehicle(v.name)}
-              style={s.vehicle(vehicle === v.name)}
+              onClick={() => selectVehicle(v)}
+              className={selected === v.name ? "vehicle chosen" : "vehicle"}
+              aria-pressed={selected === v.name}
             >
               <img
-                src={v.image}
+                src={`https://images.unsplash.com/${v.photo}?auto=format&fit=crop&w=500&q=75`}
                 alt={v.name}
-                width="72"
-                height="58"
                 loading="lazy"
-                style={s.vehicleImage}
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
-                  e.currentTarget.nextElementSibling.style.display = "block";
+                  e.currentTarget.nextSibling.style.display = "flex";
                 }}
               />
-              <span style={{ display: "none", fontSize: 30 }}>🚘</span>
-              <strong>{v.name}</strong>
-              <span style={s.vehicleType}>
-                {v.use === "Both" ? "Ride / Goods" : v.use}
-              </span>
-              {vehicle === v.name && <span style={s.selected}>✓ Selected</span>}
+              <div className="photo-fallback">{v.name}</div>
+              <div className="vehicle-info">
+                <strong>{v.name}</strong>
+                <span>Minimum Rs. {v.min.toLocaleString("en-PK")}</span>
+              </div>
+              <span className="check">{selected === v.name ? "✓" : "+"}</span>
             </button>
           ))}
         </div>
+        <p className="note">
+          Vehicle photos filhal sample hain. Launch se pehle har category ki
+          sahi, istemal ki ijazat wali photo lagani hogi.
+        </p>
       </section>
 
-      <section id="map" style={s.section}>
-        <h2>Map aur GPS Location</h2>
-        <p style={s.muted}>
-          GPS button se phone ki location lene ki koshish karein.
-          Location permission zaroori hai.
-        </p>
+      <section className="section booking">
+        <h2>Booking ki tafseel</h2>
 
-        <div style={s.mapFrame}>
-          <iframe
-            title="OpenStreetMap Pakistan"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=66.85%2C24.75%2C67.20%2C25.10&layer=mapnik"
-            loading="lazy"
-            style={s.map}
-          />
+        <label htmlFor="pickup">Pickup kahan se?</label>
+        <input
+          id="pickup"
+          value={pickup}
+          onChange={(e) => setPickup(e.target.value)}
+          placeholder="Area, road ya pickup address"
+        />
+        <button type="button" className="location-btn" onClick={useMyLocation} disabled={busy}>
+          {busy ? "Location li ja rahi hai..." : "◎ Meri current GPS location"}
+        </button>
+
+        <label htmlFor="destination">Manzil kahan hai?</label>
+        <input
+          id="destination"
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          placeholder="Destination ka address"
+        />
+
+        <label htmlFor="fare">Andazay ka fare (Rs.)</label>
+        <input
+          id="fare"
+          type="number"
+          min={vehicle?.min || 1}
+          value={fare}
+          onChange={(e) => setFare(e.target.value)}
+          inputMode="numeric"
+        />
+
+        <div className="fare-box">
+          <div><span>Selected vehicle</span><strong>{selected}</strong></div>
+          <div><span>Fare</span><strong>Rs. {amount.toLocaleString("en-PK")}</strong></div>
+          <div><span>Rider commission (10%)</span><strong>Rs. {commission.toLocaleString("en-PK")}</strong></div>
+          <div><span>Rider ka hissa, commission se pehle ke fare ke baad</span><strong>Rs. {riderGets.toLocaleString("en-PK")}</strong></div>
         </div>
 
-        <div style={s.row}>
-          <button
-            type="button"
-            style={s.primaryBtn}
-            onClick={getLocation}
-            disabled={loadingLocation}
-          >
-            {loadingLocation ? "Location mil rahi hai..." : "📍 Meri Location Lo"}
-          </button>
-          <button type="button" style={s.secondaryBtn} onClick={openMap}>
-            Map Kholein
-          </button>
-        </div>
+        <button type="button" className="book-btn" onClick={requestBooking}>
+          Booking ki tafseel check karein
+        </button>
 
-        {location && (
-          <div style={s.info}>
-            <strong>GPS coordinates</strong>
-            <p>{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
-            <a
-              href={`https://www.openstreetmap.org/?mlat=${location.lat}&mlon=${location.lng}#map=16/${location.lat}/${location.lng}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Location map par dekhein
-            </a>
-          </div>
-        )}
-      </section>
-
-      <section id="booking" style={s.section}>
-        <h2>{mode === "Ride" ? "Ride Booking" : "Saman Transport Booking"}</h2>
-        <form onSubmit={submitBooking} style={s.form}>
-          <label style={s.label}>
-            Pickup Location
-            <input
-              style={s.input}
-              value={pickup}
-              onChange={(e) => setPickup(e.target.value)}
-              placeholder="Pickup address ya GPS location"
-              required
-            />
-          </label>
-
-          <label style={s.label}>
-            Destination / Drop Location
-            <input
-              style={s.input}
-              value={drop}
-              onChange={(e) => setDrop(e.target.value)}
-              placeholder="Jahan jana hai"
-              required
-            />
-          </label>
-
-          <button type="button" style={s.secondaryBtn} onClick={getLocation}>
-            📍 Pickup ke liye GPS use karein
-          </button>
-
-          <label style={s.label}>
-            Contact Number
-            <input
-              style={s.input}
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Test ke liye number"
-              autoComplete="tel"
-              required
-            />
-          </label>
-
-          <label style={s.label}>
-            Test Kiraya (Rs.)
-            <input
-              style={s.input}
-              type="number"
-              min="1"
-              value={fare}
-              onChange={(e) => setFare(e.target.value)}
-              required
-            />
-          </label>
-
-          <button type="submit" style={s.primaryBtn}>
-            Booking Form Test Karein
-          </button>
-        </form>
-
-        {message && <p role="status" style={s.message}>{message}</p>}
-        <p style={s.warning}>
-          Test version: yeh form booking ko database mein save ya rider ko
-          dispatch nahi karta.
+        {message && <div className="message" role="status">{message}</div>}
+        <p className="note">
+          Fare abhi aap khud enter karte hain. Distance-based fare, driver
+          matching aur real booking backend agle marhalon mein banenge.
         </p>
       </section>
 
-      <section id="fare" style={s.section}>
-        <h2>10% Commission Calculator</h2>
-        <label style={s.label}>
-          Kiraya (Rs.)
-          <input
-            style={s.input}
-            type="number"
-            min="0"
-            value={fare}
-            onChange={(e) => setFare(e.target.value)}
-          />
-        </label>
-
-        <div style={s.moneyCard}>
-          <div><span>Test kiraya</span><strong>{money(amount)}</strong></div>
-          <div><span>Owner commission (10%)</span><strong>{money(commission)}</strong></div>
-          <div><span>Rider ka baqi hissa</span><strong>{money(riderAmount)}</strong></div>
-        </div>
-        <p style={s.muted}>
-          Yeh sirf hisaab hai. Abhi koi payment transfer ya commission wasool nahi hota.
-        </p>
-      </section>
-
-      <section id="account" style={s.section}>
-        <h2>Account Registration — Test</h2>
-        <p style={s.muted}>
-          Registration ka demo form. Abhi account create ya verify nahi hota.
-        </p>
-        <div style={s.row}>
-          {["Customer", "Rider"].map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRole(r)}
-              style={s.modeBtn(role === r)}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        <p style={s.info}>
-          {role === "Rider"
-            ? "Rider ke liye agle marhale mein vehicle documents, driving licence aur payment-provider verification jorenge."
-            : "Customer ke liye agle marhale mein secure sign-in aur booking history jorenge."}
-        </p>
-      </section>
-
-      <footer style={s.footer}>
+      <footer>
         <strong>Daily Ride Bazar</strong>
-        <p>Har safar, asaan tareeqe se.</p>
-        <small>Initial test version — production app nahi.</small>
+        <p>Har safar mein asani</p>
+        <small>Customer demo • Abhi live booking service nahi</small>
       </footer>
+
+      <style jsx>{`
+        * { box-sizing: border-box; }
+        .page {
+          min-height: 100vh; background: #f4f7f6; color: #172a32;
+          font-family: Arial, Helvetica, sans-serif; padding-bottom: 32px;
+        }
+        .header {
+          display: flex; align-items: center; gap: 12px; padding: 18px 16px;
+          background: #092f35; color: white;
+        }
+        .logo {
+          width: 48px; height: 48px; border-radius: 14px; display: grid;
+          place-items: center; background: #20b77a; color: #062c31;
+          font-weight: 900; font-size: 17px;
+        }
+        h1 { margin: 0; font-size: 20px; }
+        .header p { margin: 4px 0 0; color: #c8e3dd; font-size: 12px; }
+        .welcome { padding: 25px 16px 18px; }
+        .eyebrow { color: #16845b; font-weight: 800; font-size: 11px; letter-spacing: 2px; }
+        h2 { margin: 7px 0; font-size: 19px; }
+        .welcome p { margin: 7px 0 0; color: #63737a; font-size: 13px; line-height: 1.5; }
+        .tabs { display: flex; gap: 8px; padding: 0 16px 16px; }
+        button { cursor: pointer; font: inherit; }
+        .tab {
+          flex: 1; border: 1px solid #d5e1dd; border-radius: 12px;
+          background: white; padding: 12px 7px; font-weight: 700; font-size: 12px;
+        }
+        .tab.active { background: #0b5147; color: white; border-color: #0b5147; }
+        .section {
+          background: white; border-radius: 18px; padding: 17px 14px;
+          margin: 0 12px 16px; box-shadow: 0 3px 15px #153f3510;
+        }
+        .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .section-heading h2 { font-size: 16px; }
+        .section-heading span { color: #16845b; font-size: 12px; white-space: nowrap; }
+        .vehicles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
+        .vehicle {
+          min-width: 0; text-align: left; padding: 0; overflow: hidden; position: relative;
+          border: 2px solid #e6eeeb; border-radius: 13px; background: #fff;
+        }
+        .vehicle.chosen { border-color: #17a66b; background: #f2fff8; }
+        .vehicle img { display: block; width: 100%; height: 105px; object-fit: cover; background: #e6eeeb; }
+        .photo-fallback {
+          display: none; height: 105px; background: linear-gradient(135deg,#d9eee5,#eef4f2);
+          color: #315a50; align-items: center; justify-content: center; font-weight: 700;
+        }
+        .vehicle-info { display: flex; flex-direction: column; gap: 5px; padding: 10px 8px; }
+        .vehicle-info strong { font-size: 13px; }
+        .vehicle-info span { color: #60716c; font-size: 11px; }
+        .check {
+          position: absolute; right: 7px; top: 7px; width: 25px; height: 25px;
+          display: grid; place-items: center; border-radius: 50%; background: white;
+          color: #0b7853; font-weight: 900; box-shadow: 0 1px 5px #0002;
+        }
+        .note { color: #73817c; font-size: 11px; line-height: 1.5; margin: 13px 1px 0; }
+        .booking h2 { margin-bottom: 18px; }
+        label { display: block; margin: 15px 0 7px; font-weight: 700; font-size: 13px; }
+        input {
+          width: 100%; border: 1px solid #d4e0dc; background: #fff; border-radius: 10px;
+          padding: 13px 12px; font-size: 14px; color: #172a32; outline-color: #149a67;
+        }
+        .location-btn {
+          width: 100%; padding: 11px; margin-top: 8px; border: 1px solid #bfe4d3;
+          background: #effaf4; color: #08784c; border-radius: 10px; font-weight: 700; font-size: 12px;
+        }
+        .location-btn:disabled { opacity: .6; }
+        .fare-box {
+          background: #f2f7f5; border-radius: 12px; padding: 12px; margin-top: 17px;
+        }
+        .fare-box div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #dce7e2; }
+        .fare-box div:last-child { border: 0; }
+        .fare-box span { color: #63736d; font-size: 12px; line-height: 1.4; }
+        .fare-box strong { text-align: right; font-size: 12px; }
+        .book-btn {
+          width: 100%; margin-top: 16px; padding: 15px 10px; border: 0; border-radius: 12px;
+          background: #13a76a; color: white; font-weight: 800; font-size: 14px;
+        }
+        .message {
+          margin-top: 12px; padding: 12px; background: #fff8e7; border: 1px solid #f0dfae;
+          border-radius: 10px; color: #604a13; font-size: 12px; line-height: 1.5;
+        }
+        footer { text-align: center; padding: 12px; color: #6d7c76; font-size: 12px; }
+        footer strong { color: #0b5147; }
+        footer p { margin: 5px; }
+        footer small { font-size: 10px; }
+        @media (min-width: 650px) {
+          .page { max-width: 760px; margin: 0 auto; }
+          .vehicles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .vehicle img, .photo-fallback { height: 130px; }
+        }
+      `}</style>
     </main>
   );
 }
-
-const s = {
-  page: {
-    minHeight: "100vh",
-    background: "#f1f5f9",
-    color: "#0f172a",
-    fontFamily: "Arial, sans-serif",
-    padding: "0 0 28px",
-  },
-  hero: {
-    background: "linear-gradient(135deg,#14532d,#15803d,#0f766e)",
-    color: "white",
-    textAlign: "center",
-    padding: "32px 16px",
-  },
-  logo: {
-    margin: "0 auto 12px",
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    display: "grid",
-    placeItems: "center",
-    background: "white",
-    color: "#166534",
-    fontSize: 22,
-    fontWeight: 900,
-  },
-  smallLight: { fontSize: 13, opacity: 0.9 },
-  nav: {
-    display: "flex",
-    justifyContent: "center",
-    flexWrap: "wrap",
-    gap: 16,
-    padding: 14,
-    background: "white",
-  },
-  section: {
-    maxWidth: 900,
-    margin: "20px auto",
-    padding: 18,
-    background: "white",
-    borderRadius: 16,
-    boxShadow: "0 3px 12px rgba(15,23,42,.06)",
-    boxSizing: "border-box",
-    width: "calc(100% - 24px)",
-  },
-  row: { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 },
-  modeBtn: (active) => ({
-    flex: "1 1 130px",
-    padding: 14,
-    borderRadius: 10,
-    border: active ? "2px solid #15803d" : "1px solid #cbd5e1",
-    background: active ? "#15803d" : "white",
-    color: active ? "white" : "#0f172a",
-    fontWeight: 700,
-    fontSize: 15,
-  }),
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(125px,1fr))",
-    gap: 10,
-    marginTop: 14,
-  },
-  vehicle: (active) => ({
-    minHeight: 130,
-    padding: 12,
-    borderRadius: 12,
-    border: active ? "2px solid #15803d" : "1px solid #dbe3ec",
-    background: active ? "#f0fdf4" : "white",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    color: "#0f172a",
-  }),
-  vehicleImage: { objectFit: "contain", maxWidth: "100%" },
-  vehicleType: { fontSize: 11, color: "#64748b" },
-  selected: { fontSize: 12, color: "#15803d", fontWeight: 700 },
-  mapFrame: {
-    width: "100%",
-    height: 320,
-    border: "1px solid #cbd5e1",
-    borderRadius: 12,
-    overflow: "hidden",
-    margin: "12px 0",
-  },
-  map: { width: "100%", height: "100%", border: 0 },
-  primaryBtn: {
-    flex: "1 1 170px",
-    padding: 14,
-    background: "#15803d",
-    color: "white",
-    border: 0,
-    borderRadius: 10,
-    fontWeight: 700,
-    fontSize: 15,
-  },
-  secondaryBtn: {
-    flex: "1 1 150px",
-    padding: 13,
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    border: "1px solid #bfdbfe",
-    borderRadius: 10,
-    fontWeight: 700,
-  },
-  form: { display: "flex", flexDirection: "column", gap: 15, marginTop: 12 },
-  label: { display: "flex", flexDirection: "column", gap: 7, fontWeight: 700 },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: 13,
-    border: "1px solid #cbd5e1",
-    borderRadius: 9,
-    fontSize: 16,
-    background: "white",
-    color: "#0f172a",
-  },
-  muted: { color: "#64748b", fontSize: 14, lineHeight: 1.6 },
-  info: {
-    marginTop: 12,
-    padding: 13,
-    background: "#f0fdf4",
-    borderRadius: 10,
-    lineHeight: 1.7,
-    overflowWrap: "anywhere",
-  },
-  message: {
-    padding: 14,
-    background: "#ecfdf5",
-    color: "#166534",
-    borderRadius: 10,
-    lineHeight: 1.6,
-    overflowWrap: "anywhere",
-  },
-  warning: { fontSize: 12, color: "#92400e", lineHeight: 1.6 },
-  moneyCard: {
-    display: "grid",
-    gap: 12,
-    padding: 16,
-    marginTop: 14,
-    background: "#f8fafc",
-    borderRadius: 12,
-  },
-  footer: { textAlign: "center", padding: 24, color: "#64748b" },
-};
