@@ -1,49 +1,67 @@
 "use client";
 import { useState } from "react";
 
-const RIDES = [
-  { id: 1, name: "Suzuki Alto", type: "Mini", price: "Rs 800", img: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=500", loc: "Gulshan, Karachi", seats: "4 Seats" },
-  { id: 2, name: "Toyota Corolla", type: "Sedan", price: "Rs 1500", img: "https://images.unsplash.com/photo-1550355291-bbee04a92027?w=500", loc: "Clifton, Karachi", seats: "4 Seats" },
-  { id: 3, name: "Honda BR-V", type: "SUV", price: "Rs 2500", img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=500", loc: "Defence, Karachi", seats: "7 Seats" },
-  { id: 4, name: "Toyota Hiace", type: "Van", price: "Rs 3000", img: "https://images.unsplash.com/photo-1464219789935-c2d9aba644?w=500", loc: "Saddar, Karachi", seats: "12 Seats" },
-  { id: 5, name: "Suzuki Bolan", type: "Mini Van", price: "Rs 1200", img: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=500", loc: "Nazimabad, Karachi", seats: "7 Seats" },
-];
-
 export default function Home() {
-  const [filter, setFilter] = useState("All");
-  const filtered = filter === "All" ? RIDES : RIDES.filter(r => r.type === filter);
+  const [ride, setRide] = useState("Mini");
+  const [pickup, setPickup] = useState("");
+  const [drop, setDrop] = useState("");
+  const [booked, setBooked] = useState(false);
+
+  const rides = [
+    { name: "Bike", price: "Rs 150", time: "2 min", icon: "🏍️" },
+    { name: "Rickshaw", price: "Rs 250", time: "3 min", icon: "🛺" },
+    { name: "Mini", price: "Rs 400", time: "4 min", icon: "🚗" },
+    { name: "Sedan", price: "Rs 600", time: "5 min", icon: "🚙" },
+    { name: "Van", price: "Rs 800", time: "6 min", icon: "🚐" },
+  ];
+
+  const selectedRide = rides.find(r => r.name === ride);
+
+  if (booked) {
+    return (
+      <div style={{background:"#000", color:"#fff", minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"20px", textAlign:"center"}}>
+        <div style={{fontSize:"60px"}}>✅</div>
+        <h1>Ride Booked!</h1>
+        <h2 style={{color:"#25D366"}}>{ride} - {selectedRide.price}</h2>
+        <p>{pickup} → {drop}</p>
+        <p style={{background:"#222", padding:"10px", borderRadius:"10px", marginTop:"20px"}}>Driver: Arsalan • 5⭐ • 2 min away<br/>Car: Suzuki Alto - R-1234</p>
+        <button onClick={()=>setBooked(false)} style={{marginTop:"20px", background:"#fff", color:"#000", border:"none", padding:"12px 30px", borderRadius:"25px", fontWeight:"bold"}}>Book Another Ride</button>
+        <button onClick={()=>window.open(`https://wa.me/923000000000?text=My ${ride} ride from ${pickup} to ${drop} booked!`)} style={{marginTop:"10px", background:"#25D366", color:"#fff", border:"none", padding:"12px 30px", borderRadius:"25px", fontWeight:"bold", width:"80%"}}>Share on WhatsApp</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{background:"#f5f5f5", minHeight:"100vh", fontFamily:"sans-serif"}}>
-      <header style={{background:"#000", color:"#fff", padding:"15px", textAlign:"center", position:"sticky", top:0, zIndex:10}}>
-        <h1 style={{margin:0}}>🚗 Daily Ride Bazar 2026</h1>
-        <p style={{margin:"5px 0 0", fontSize:"14px", opacity:0.8}}>Karachi's #1 Ride Marketplace</p>
-      </header>
-
-      <div style={{padding:"10px", display:"flex", gap:"8px", overflowX:"auto"}}>
-        {["All","Mini","Sedan","SUV","Van","Mini Van"].map(t=>(
-          <button key={t} onClick={()=>setFilter(t)} style={{padding:"8px 16px", borderRadius:"20px", border:"none", background: filter===t?"#000":"#fff", color: filter===t?"#fff":"#000", whiteSpace:"nowrap"}}>{t}</button>
-        ))}
+      <div style={{background:"#000", color:"#fff", padding:"15px", textAlign:"center"}}>
+        <h1 style={{margin:0, fontSize:"22px"}}>🚗 Daily Ride Bazar 2026</h1>
+        <p style={{margin:"5px 0 0", fontSize:"12px", opacity:0.7}}>Karachi - Uber Jesa System</p>
       </div>
 
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", padding:"10px"}}>
-        {filtered.map(ride=>(
-          <div key={ride.id} style={{background:"#fff", borderRadius:"12px", overflow:"hidden", boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>
-            <img src={ride.img} alt={ride.name} style={{width:"100%", height:"120px", objectFit:"cover"}} />
-            <div style={{padding:"10px"}}>
-              <h3 style={{margin:"0", fontSize:"14px"}}>{ride.name}</h3>
-              <p style={{margin:"2px 0", fontSize:"11px", color:"#666"}}>{ride.loc} • {ride.seats}</p>
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"6px"}}>
-                <b style={{color:"#00a651", fontSize:"14px"}}>{ride.price}</b>
-                <button onClick={()=>window.open(`https://wa.me/923000000000?text=I want ${ride.name} at ${ride.loc}`)} style={{background:"#25D366", color:"#fff", border:"none", padding:"5px 10px", borderRadius:"6px", fontSize:"11px"}}>WhatsApp</button>
-              </div>
-            </div>
+      <div style={{height:"220px", background:"#ddd", position:"relative", backgroundImage:"url(https://maps.googleapis.com/maps/api/staticmap?center=Karachi&zoom=12&size=600x300&key=demo)", backgroundSize:"cover", display:"flex", alignItems:"center", justifyContent:"center"}}>
+        <div style={{background:"rgba(255,255,255,0.9)", padding:"10px 20px", borderRadius:"20px", fontWeight:"bold"}}>📍 Karachi Live Map</div>
+        <div style={{position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:"30px"}}>📍</div>
+      </div>
+
+      <div style={{background:"#fff", margin:"-20px 10px", borderRadius:"15px", padding:"15px", boxShadow:"0 4px 15px rgba(0,0,0,0.1)", position:"relative"}}>
+        <input value={pickup} onChange={e=>setPickup(e.target.value)} placeholder="📍 Pickup - Kahan se?" style={{width:"100%", padding:"12px", borderRadius:"10px", border:"1px solid #ddd", marginBottom:"10px"}} />
+        <input value={drop} onChange={e=>setDrop(e.target.value)} placeholder="🏁 Drop - Kahan jana hai?" style={{width:"100%", padding:"12px", borderRadius:"10px", border:"1px solid #ddd"}} />
+      </div>
+
+      <div style={{background:"#fff", margin:"10px", borderRadius:"15px", padding:"10px"}}>
+        <h3 style={{margin:"5px 10px"}}>Ride Select Karo:</h3>
+        {rides.map(r=>(
+          <div key={r.name} onClick={()=>setRide(r.name)} style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px", borderRadius:"10px", background: ride===r.name ? "#000" : "#f9f9f9", color: ride===r.name ? "#fff" : "#000", marginBottom:"8px", border: ride===r.name ? "2px solid #000" : "1px solid #eee"}}>
+            <div style={{display:"flex", alignItems:"center", gap:"10px"}}><span style={{fontSize:"22px"}}>{r.icon}</span><div><b>{r.name}</b><div style={{fontSize:"11px", opacity:0.6}}>{r.time} away</div></div></div>
+            <b>{r.price}</b>
           </div>
         ))}
       </div>
 
-      <div style={{textAlign:"center", padding:"20px", fontSize:"12px", color:"#888"}}>
-        MASHALLAH! 5 Rides Live - Owner Arsalan Khan
+      <div style={{padding:"10px", position:"sticky", bottom:0, background:"#fff"}}>
+        <button disabled={!pickup || !drop} onClick={()=>setBooked(true)} style={{width:"100%", background: (!pickup || !drop) ? "#ccc" : "#000", color:"#fff", border:"none", padding:"15px", borderRadius:"12px", fontSize:"16px", fontWeight:"bold"}}>
+          Book {ride} - {selectedRide.price} ➔
+        </button>
       </div>
     </div>
   );
